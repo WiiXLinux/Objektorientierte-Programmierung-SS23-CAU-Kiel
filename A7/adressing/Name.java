@@ -4,10 +4,20 @@ public class Name {
     private String firstName;
     private String name;
 
+    /**
+     * Constructor initialising a full name for a person.
+     * The only way of creating a Name from public.
+     * @param name name of the person
+     * @param firstName first Name of the person
+     */
     public Name(String firstName, String name) {
         this.name = name;
         this.firstName = firstName;
     }
+
+    /**
+     * Constructor initialising an empty name for a person.
+     */
     public Name(){
         this.firstName = "";
         this.name = "";
@@ -40,6 +50,10 @@ public class Name {
         this.firstName = prename;
     }
 
+    /**
+     * Overrides Object.toString. Gives a nice String representation of a Name.
+     * @return nice String representation of a Name.
+     */
     @Override
     public String toString() {
         return firstName + " " + name;
