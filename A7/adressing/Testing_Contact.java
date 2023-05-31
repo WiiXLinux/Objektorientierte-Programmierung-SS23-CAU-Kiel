@@ -10,7 +10,7 @@ public class Testing_Contact {
      * These have to be package-private or private according to the task description.
      */
     public static void main(String[]args){
-        Contact contact = new Contact();
+        Person contact = new Person();
         contact.setName(new Name("Sören", "Domrös"));
         Address b = new Address("Kiel", 24118, "Christian-Albrechst-Platz", 4);
         contact.setAddress(b);

@@ -1,14 +1,17 @@
 package A7.adressing;
 
-public class Contact {
-    public Contact(Name name, Address address) {
-        this.name = name;
-        this.address = address;
+public abstract class Contact {
+    /**
+     * Empty constructor. Should not be called by anybody but this package, so it's package-private.
+     */
+    Contact(){
+
     }
-    public Contact(){
-        this.name = new Name();
-        this.address = new Address();
-    }
+
+    // name and address are package-private and not private since it would be impossible to inherit them if they weren't.
+    Name name;
+    Address address;
+
     /**
      * The following setters and getters are package private to stop unwanted access.
      * toString remains public since it else conflicts with super.toString, this is an exception to the task description telling,
@@ -18,6 +21,7 @@ public class Contact {
      * Adding to that there are no security problems arising from this since the user should only set the name and address on initialisation of an instance of this class,
      * which is specified in the task description. But with that the need for setters and getters disappears completely.
      */
+
 
     Name getName() {
         return name;
@@ -35,10 +39,11 @@ public class Contact {
         this.address = address;
     }
 
-    private Name name;
-    private Address address;
-
-    public String toString(){
-        return name.toString() + ": " + address.toString();
-    }
+    /**
+     * Override the default toString by making it abstract, which notifies subclasses of Contact to implement it.
+     * Should return a nice string representation of the contact.
+     * @return a nice string representation of the contact
+     */
+    @Override
+    public abstract String toString();
 }
