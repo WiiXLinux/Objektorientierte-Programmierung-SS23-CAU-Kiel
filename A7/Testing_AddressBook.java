@@ -1,7 +1,11 @@
 package A7;
 
-import A7.adressing.*;
+import A7.addressing.*;
 
+/**
+ * Class serving as a namespace for an example program inside the public space.
+ * Demonstrates usage of an AddressBook instance.
+ */
 public class Testing_AddressBook {
     /**
      * Example program to demonstrate the usage of an AddressBook instance.
