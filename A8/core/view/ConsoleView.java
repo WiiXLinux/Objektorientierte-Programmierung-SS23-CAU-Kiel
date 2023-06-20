@@ -5,7 +5,9 @@ import A8.core.model.World;
 /**
  * A view that prints the current state of the world to the console upon every
  * update.
+ * Won't support Enemy Squares or Wall Squares that's why it's deprecated.
  */
+@Deprecated
 public class ConsoleView implements View {
 
 	@Override

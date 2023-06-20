@@ -44,8 +44,8 @@ public class Labyrinth {
                 gview.setVisible(true);
             	
             	// Create and register console view.
-        		ConsoleView cview = new ConsoleView();
-            	world.registerView(cview);
+        		// ConsoleView cview = new ConsoleView();
+            	// world.registerView(cview);
             	
             	// Create controller and initialize JFrame.
                 Controller controller = new Controller(world);
