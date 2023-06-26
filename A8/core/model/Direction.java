@@ -24,7 +24,7 @@ public class Direction {
 			return -1;
 		case 4:
 			return 1;
-			
+
 		default: throw new IllegalArgumentException("Invalid direction");
 		}
 	}
@@ -43,7 +43,7 @@ public class Direction {
 			return -1;
 		case 2:
 			return 1;
-			
+
 		default: throw new IllegalArgumentException("Invalid direction");
 		}
 	}

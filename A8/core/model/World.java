@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import A8.core.lib.LabReader;
+import A8.core.lib.MatrixUtils;
 import A8.core.view.View;
 
 /** Mini Class to represent a tuple of type E */
@@ -167,55 +168,46 @@ public class World {
 
 		for (int i = 0; i < this.width; i++){
 			for (int j = 0; j < this.height; j++){
+				// There seems to be an enemy here
 				if (this.field[i][j] == 2){
 					newField[i][j] = 0;
 
-					// Calculate the environment of an enemy to look where they could go etc.
-					// This is in form of a 3x3 matrix:
-					// [no, 	UP, 	no]
-					// [LEFT, 	no, 	RIGHT]
-					// [no, 	DOWN,	no]
-					// Initialise the 2D-array.
-					boolean[][] lookAround = new boolean[][]{
-							{false,	false, false},
-							{false,	false, false},
-							{false, false, false}
-					};
+					// We'll init all directions as impossible
+					boolean UP = false;
+					boolean LEFT = false;
+					boolean RIGHT = false;
+					boolean DOWN = false;
+					// And then try to get their real values.
+					// If we can't do that (because of the enemy being at the border), just ignore it.
+					try {UP = this.field[i][j - 1] == 0;} catch (IndexOutOfBoundsException ignore) {}
+					try {LEFT = this.field[i - 1][j] == 0;} catch (IndexOutOfBoundsException ignore) {}
+					try {RIGHT = this.field[i + 1][j] == 0;} catch (IndexOutOfBoundsException ignore) {}
+					try {DOWN = this.field[i][j + 1] == 0;} catch (IndexOutOfBoundsException ignore) {}
 
-					// Now get the real values at UP, LEFT, RIGHT and DOWN
-					// Looking at this can be a bit confusing, because the "x/y coordinates" are "y/x" in the matrix.
-					// We have to try catch because of border issues.
-					// Remember for the next time: Never do it like this, if you have something like an array to
-					// represent your play field, just add a frame of unpassable barriers to it...
-					try {lookAround[0][1] = field[i][j-1] == 0;} catch (IndexOutOfBoundsException ignore) {lookAround[0][1] = false;}
-					try {lookAround[1][0] = field[i-1][j] == 0;} catch (IndexOutOfBoundsException ignore) {lookAround[1][0] = false;}
-					try {lookAround[1][2] = field[i+1][j] == 0;} catch (IndexOutOfBoundsException ignore) {lookAround[1][2] = false;}
-					try {lookAround[2][1] = field[i][j+1] == 0;} catch (IndexOutOfBoundsException ignore) {lookAround[2][1] = false;}
+					// In here we'll store possible dx, dy tuples
+					ArrayList<Tuple<Integer>> directionsThatArePossible = new ArrayList<>();
 
-					Tuple<Integer>[] possibleTargets = new Tuple[4];
-					int lenOfThat = 0;
-					for (int k = 0; k < 3; k++){
-						for (int l = 0; l < 3; l++)
-							if (lookAround[k][l]){
-								// Here we convert back to "x/y" and then change them to be differences in coordinates.
-								// For example UP and LEFT will give {(0, -1), (-1, 0)}.
-								possibleTargets[lenOfThat] = new Tuple<Integer>(l - 1, k - 1);
-								lenOfThat++;
-							}
+					// Add the values if they are possible
+					if (UP) directionsThatArePossible.add(new Tuple<>(0, -1));
+					if (LEFT) directionsThatArePossible.add(new Tuple<>(-1, 0));
+					if (RIGHT) directionsThatArePossible.add(new Tuple<>(1, 0));
+					if (DOWN) directionsThatArePossible.add(new Tuple<>(0, 1));
+
+					// If it can't move, it dies.
+					if (!directionsThatArePossible.isEmpty()){
+						System.out.println("Possible directions: " + directionsThatArePossible);
+						int randomIndex = (int)(directionsThatArePossible.size() * Math.random());  // value of floor(n * [0, 1))
+						System.out.println("Index that was picked: " + randomIndex);
+						Tuple<Integer> directionThatWasPicked = directionsThatArePossible.get(randomIndex);
+						System.out.println("Direction that was picked: " + directionThatWasPicked);
+						int dx = directionThatWasPicked.x, dy = directionThatWasPicked.y;
+						System.out.println("dx, dy = ["+dx+", "+dy+"]");
+						// Assign the new square
+						newField[i + dx][j + dy] = 2;
+
 					}
-					// for (int k = 0; k < lenOfThat; k++)
-					// 		System.out.println(possibleTargets[k]);
-
-
-					// Now roll the dice and pick the next direction.
-					int index = (int)(lenOfThat * Math.random());
-					// If the enemy ran into the player, the game is over
-					if (i + possibleTargets[index].x == playerX && j + possibleTargets[index].y == playerY){
-						game_over = true;
-					}
-					// set the next position of the enemy.
-					newField[i + possibleTargets[index].x][j + possibleTargets[index].y] = 2;
 				}
+
 			}
 		}
 		// Update

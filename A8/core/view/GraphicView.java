@@ -65,7 +65,7 @@ public class GraphicView extends JPanel implements View {
     @Override
     public void paint(Graphics g) {
         // Paint background
-        g.setColor(Color.RED);
+        g.setColor(Color.LIGHT_GRAY);
         g.fillRect(bg.x, bg.y, bg.width, bg.height);
 
         if (gameOver) {
