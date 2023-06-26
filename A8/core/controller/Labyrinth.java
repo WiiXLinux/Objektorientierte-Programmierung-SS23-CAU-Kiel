@@ -1,6 +1,7 @@
 package A8.core.controller;
 import java.awt.Dimension;
 import java.awt.Insets;
+import java.io.IOException;
 
 import javax.swing.JFrame;
 
@@ -34,9 +35,14 @@ public class Labyrinth {
 
 
     			// Create a new game world.
-            	World world = new World(width, height);
-            	
-            	// Size of a field in the graphical view.
+                World world = null;
+                try {
+                    world = new World(width, height, args[2]);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+                // Size of a field in the graphical view.
             	Dimension fieldDimensions = new Dimension(25, 25);
             	// Create and register graphical view.
             	GraphicView gview = new GraphicView(width * fieldDimensions.width, height * fieldDimensions.height, fieldDimensions);

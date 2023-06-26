@@ -1,8 +1,27 @@
 package A8.core.model;
 
+import java.awt.*;
+import java.io.IOException;
 import java.util.ArrayList;
 
+import A8.core.lib.LabReader;
 import A8.core.view.View;
+
+/** Mini Class to represent a tuple of type E */
+class Tuple<E>{
+	public Tuple(E x, E y){
+		this.x = x;
+		this.y = y;
+	}
+	public E x;
+	public E y;
+
+	@Override
+	public String toString(){
+		return "(" + x + ", " + y + ")";
+	}
+}
+
 
 /**
  * The world is our model. It saves the bare minimum of information required to
@@ -43,8 +62,8 @@ public class World {
 			// Since the square is empty, do nothing
 			() -> {},
 			// index 1, wall square
-			// We have detected an upcoming collision, so signal that the player should not move.
-			() -> collision = true,
+			// Collision solution is now handled in a different way, so do nothing
+			() -> {},
 			// index 2, enemy square
 			// it seems the player ran into an enemy, or the enemy ran into the player, so the game is over.
 			() -> game_over = true
@@ -64,15 +83,34 @@ public class World {
 		this.field = new int[width][height];
 		for (int i = 0; i < width; i++){
 			for (int j = 0; j < height; j++){
-				this.field[i][j] = (int)(2 * Math.random()); // Either 0 or 1.
+				this.field[i][j] = (int)(1.5 * Math.random()); // Either 0 or 1.
 			}
 		}
 		this.field[0][0] = 0;  // Give the player some space
-		this.field[width - 1][height - 1] = 2;  // Add one enemy at the border to test.
+		this.field[width - 2][height - 2] = 2;  // Add one enemy at the border to test.
+		this.field[1][1] = 2;
+	}
+
+
+	/**
+	 * Creates a given world with set size.
+	 * @param path Path to the labyrinth file.
+	 */
+	public World(int width, int height, String path) throws IOException {
+		this.field = LabReader.parse(path, width, height);
+		this.width = field.length;
+		this.height = field[0].length;
 	}
 
 	///////////////////////////////////////////////////////////////////////////
 	// Getters and Setters
+
+	public int getScore() {
+		return score;
+	}
+	public boolean isGame_over() {
+		return game_over;
+	}
 
 	public int getWidth() {
 		return width;
@@ -95,17 +133,24 @@ public class World {
 		playerX = Math.max(0, playerX);
 		playerX = Math.min(getWidth() - 1, playerX);
 
-		// Run the collision handler.
+		// Run the action handler.
 		this.action_on_new_move[this.field[playerX][this.playerY]].run();
 
-		System.out.println(collision);
 
-		// Either collide or not.
-		if (!collision)
-			this.playerX = playerX;
-		else
-			collision = false;
-		
+		this.playerX = playerX;
+
+		updateViews();
+	}
+
+	public void setPlayerY(int playerY) {
+		playerY = Math.max(0, playerY);
+		playerY = Math.min(getHeight() - 1, playerY);
+
+		// Run the action handler.
+		this.action_on_new_move[this.field[playerX][this.playerY]].run();
+
+		this.playerY = playerY;
+
 		updateViews();
 	}
 
@@ -117,6 +162,7 @@ public class World {
 	 * Really slow implementation, but I don't care because the game is turn based and not real time.
 	 */
 	public void updateField(){
+		// Clone the old field
 		int[][] newField = this.field.clone();
 
 		for (int i = 0; i < this.width; i++){
@@ -124,35 +170,58 @@ public class World {
 				if (this.field[i][j] == 2){
 					newField[i][j] = 0;
 
-					// Flip 2 coins, and determine the next coordinates for the enemies.
-					// The coins have values of {-1, 1}.
-					// For now, they can climb over walls.
-					try {
-						newField[i + 2 * (int) (2 * Math.random()) - 1][j + 2 * (int) (2 * Math.random()) - 1] = 2;
-					} catch (IndexOutOfBoundsException indexOutOfBoundsException){
-						// If they try to leave the play field, just don't let them move.
+					// Calculate the environment of an enemy to look where they could go etc.
+					// This is in form of a 3x3 matrix:
+					// [no, 	UP, 	no]
+					// [LEFT, 	no, 	RIGHT]
+					// [no, 	DOWN,	no]
+					// Initialise the 2D-array.
+					boolean[][] lookAround = new boolean[][]{
+							{false,	false, false},
+							{false,	false, false},
+							{false, false, false}
+					};
+
+					// Now get the real values at UP, LEFT, RIGHT and DOWN
+					// Looking at this can be a bit confusing, because the "x/y coordinates" are "y/x" in the matrix.
+					// We have to try catch because of border issues.
+					// Remember for the next time: Never do it like this, if you have something like an array to
+					// represent your play field, just add a frame of unpassable barriers to it...
+					try {lookAround[0][1] = field[i][j-1] == 0;} catch (IndexOutOfBoundsException ignore) {lookAround[0][1] = false;}
+					try {lookAround[1][0] = field[i-1][j] == 0;} catch (IndexOutOfBoundsException ignore) {lookAround[1][0] = false;}
+					try {lookAround[1][2] = field[i+1][j] == 0;} catch (IndexOutOfBoundsException ignore) {lookAround[1][2] = false;}
+					try {lookAround[2][1] = field[i][j+1] == 0;} catch (IndexOutOfBoundsException ignore) {lookAround[2][1] = false;}
+
+					Tuple<Integer>[] possibleTargets = new Tuple[4];
+					int lenOfThat = 0;
+					for (int k = 0; k < 3; k++){
+						for (int l = 0; l < 3; l++)
+							if (lookAround[k][l]){
+								// Here we convert back to "x/y" and then change them to be differences in coordinates.
+								// For example UP and LEFT will give {(0, -1), (-1, 0)}.
+								possibleTargets[lenOfThat] = new Tuple<Integer>(l - 1, k - 1);
+								lenOfThat++;
+							}
 					}
+					// for (int k = 0; k < lenOfThat; k++)
+					// 		System.out.println(possibleTargets[k]);
+
+
+					// Now roll the dice and pick the next direction.
+					int index = (int)(lenOfThat * Math.random());
+					// If the enemy ran into the player, the game is over
+					if (i + possibleTargets[index].x == playerX && j + possibleTargets[index].y == playerY){
+						game_over = true;
+					}
+					// set the next position of the enemy.
+					newField[i + possibleTargets[index].x][j + possibleTargets[index].y] = 2;
 				}
 			}
 		}
+		// Update
 		this.field = newField;
 	}
 
-	public void setPlayerY(int playerY) {
-		playerY = Math.max(0, playerY);
-		playerY = Math.min(getHeight() - 1, playerY);
-
-		// Run the collision handler.
-		this.action_on_new_move[this.field[playerX][this.playerY]].run();
-
-		// Either collide or not.
-		if (!collision)
-			this.playerY = playerY;
-		else
-			collision = false;
-		
-		updateViews();
-	}
 
 	///////////////////////////////////////////////////////////////////////////
 	// Player Management
@@ -162,20 +231,38 @@ public class World {
 	 * 
 	 * @param direction where to move. 1 up, 2 down, 3, left, 4 right
 	 */
-	public void movePlayer(int direction) {	
-		// The direction tells us exactly how much we need to move along
-		// every direction.
-		// Collision had to be implemented in the following methods,
-		// because it would have to change the project structure.
-		if (!collision)
-			setPlayerX(getPlayerX() + Direction.getDeltaX(direction));
-		if (!collision)
-			setPlayerY(getPlayerY() + Direction.getDeltaY(direction));
-		collision = false;
+	public void movePlayer(int direction) {
+		if (game_over){
+			// "delete" the player
+			field[playerX][playerY] = 0;
+			// call this to notify the view
+			updateViews();
+		} else {
+			// The direction tells us exactly how much we need to move along
+			// every direction.
+			// Collision had to be implemented in the following methods,
+			// because it would have to change the project structure.
+			int newX = getPlayerX() + Direction.getDeltaX(direction);
+			try {
+				if (field[newX][getPlayerY()] != 1)
+					setPlayerX(newX);
+			} catch (IndexOutOfBoundsException ignored) {
+				// Collide with corner
+			}
 
-		// TODO implement updateField and a score system
-		updateField();
-		score += 100;
+			int newY = getPlayerY() + Direction.getDeltaY(direction);
+			try {
+				if (field[getPlayerX()][newY] != 1)
+					setPlayerY(newY);
+			} catch (IndexOutOfBoundsException ignored) {
+				// ...
+			}
+
+			// Update enemy movements
+			updateField();
+			// 100 points for each survived turn
+			score += 100;
+		}
 	}
 
 	///////////////////////////////////////////////////////////////////////////
