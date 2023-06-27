@@ -1,10 +1,12 @@
 package A8.core.view;
 
-import java.awt.*;
+import A8.core.controller.Labyrinth;
+import A8.core.model.World;
 
 import javax.swing.*;
+import java.awt.*;
 
-import A8.core.model.World;
+import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
 
 /**
  * A graphical view of the world.
@@ -19,9 +21,13 @@ public class GraphicView extends JPanel implements View {
      * The view's height.
      */
     private final int HEIGHT;
-
-    private Dimension fieldDimension;
-
+    /**
+     * The dimension of one square
+     */
+    private final Dimension fieldDimension;
+    /**
+     * Constructor that should be used
+     */
     public GraphicView(int width, int height, Dimension fieldDimension) {
         this.WIDTH = width;
         this.HEIGHT = height;
@@ -58,20 +64,19 @@ public class GraphicView extends JPanel implements View {
      * Current score
      */
     private int score = 0;
-
     /**
-     * Creates a new instance.
+     * Should we still render?
      */
+    private boolean stop = false;
+
     @Override
     public void paint(Graphics g) {
-        // Paint background
-        g.setColor(Color.LIGHT_GRAY);
-        g.fillRect(bg.x, bg.y, bg.width, bg.height);
+        // If the game is over, change to a new "scene"
+        if (!gameOver) {
+            // Paint background
+            g.setColor(Color.LIGHT_GRAY);
+            g.fillRect(bg.x, bg.y, bg.width, bg.height);
 
-        if (gameOver) {
-            g.setColor(Color.BLACK);
-            g.drawString("Game Over\nScore: " + score, bg.width / 2, bg.height / 2);
-        } else {
             // Paint squares, again, a slow implementation, but turn based, so...
             for (int i = 0; i < current_field.length; i++) {
                 for (int j = 0; j < current_field[0].length; j++) {
@@ -87,24 +92,68 @@ public class GraphicView extends JPanel implements View {
 
     @Override
     public void update(World world) {
+        if (gameOver && !stop) {
+            this.setVisible(false);
 
-        // Update the play field
-        current_field = world.getField();
+            stop = true;
+            System.out.println("Game Over");
 
-        // Update the current game state.
-        gameOver = world.isGame_over();
+            JFrame gameOver = new JFrame();
 
-        // Update the current score
-        score = world.getScore();
+            gameOver.setTitle("Game Over");
+            gameOver.setBounds(0, 0, 500, 500);
+            gameOver.setDefaultCloseOperation(EXIT_ON_CLOSE);
+            gameOver.setLayout(null);
+            gameOver.setResizable(false);
 
-        // Update players size and location
-        player.setSize(fieldDimension);
-        player.setLocation((int)
-                        (world.getPlayerX() * fieldDimension.width),
-                (int) (world.getPlayerY() * fieldDimension.height));
+            Font font = new Font(null, Font.ITALIC, 50);
+
+            JLabel title = new JLabel("Game Over");
+            title.setFont(font);
+            title.setBounds(30, 200, 500, 50);
 
 
-        repaint();
+            JLabel scoreText = new JLabel("Score: " + this.score);
+            scoreText.setFont(font);
+            scoreText.setBounds(30, 250, 500, 50);
+
+            JButton start = new JButton("Replay?");
+            start.setBounds(30, 300, 300, 50);
+            start.addActionListener(e -> {
+                String width = "11";
+                String height = "4";
+                String path = "src/A8/bin/test/lab.io";
+                Labyrinth.main(new String[]{width, height, path});
+                gameOver.setVisible(false);
+                this.setVisible(false);
+            });
+
+            gameOver.add(title);
+            gameOver.add(scoreText);
+            gameOver.add(start);
+
+            gameOver.setVisible(true);
+
+
+            // ignore when gameOver && stop (so that we don't create a million new windows)
+        } else if (!gameOver) {
+            // Update the play field
+            current_field = world.getField();
+
+            // Update the current game state.
+            gameOver = world.isGame_over();
+
+            // Update the current score
+            score = world.getScore();
+
+            // Update players size and location
+            player.setSize(fieldDimension);
+            player.setLocation(world.getPlayerX() * fieldDimension.width,
+                    world.getPlayerY() * fieldDimension.height);
+
+
+            repaint();
+        }
     }
 
 }

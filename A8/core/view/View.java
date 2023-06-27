@@ -8,11 +8,11 @@ import A8.core.model.World;
  */
 public interface View {
 
-	/**
-	 * Called whenever the world updates.
-	 * 
-	 * @param world the {@link World} object which called this method.
-	 */
-	void update(World world);
+    /**
+     * Called whenever the world updates.
+     *
+     * @param world the {@link World} object which called this method.
+     */
+    void update(World world);
 
 }
